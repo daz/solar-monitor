@@ -74,6 +74,7 @@ void getBatteryVoltage();
 void doFan();
 float KY013toCelcius(int val);
 float solarCurrent(int adcVal);
+double mapf(double val, double inMin, double inMax, double outMin, double outMax);
 
 BlynkTimer timer;
 WiFiClientSecure wifiClient;
@@ -87,6 +88,9 @@ struct {
   float inverterTemp;
   float batteryVoltage;
   float solar1Current, solar2Current, solar3Current;
+  int rawInverterTemp;
+  int rawBatteryVoltage;
+  int rawSolar1Current, rawSolar2Current, rawSolar3Current;
 } State;
 
 // Timers
@@ -167,13 +171,18 @@ void updateServer() {
   losant.sendState(root);
 
   // Debug
-  DEBUG_PRINT("callingForPower %s\n",   State.callingForPower ? "true" : "false");
-  DEBUG_PRINT("batteryVoltage  %.4f\n", State.batteryVoltage);
-  DEBUG_PRINT("solar1Current   %.4f\n", State.solar1Current);
-  DEBUG_PRINT("solar2Current   %.4f\n", State.solar2Current);
-  DEBUG_PRINT("solar3Current   %.4f\n", State.solar3Current);
-  DEBUG_PRINT("inverterTemp    %.4f\n", State.inverterTemp);
-  DEBUG_PRINT("fan             %s\n",   State.fan ? "true" : "false");
+  DEBUG_PRINT("callingForPower    %s\n",   State.callingForPower ? "true" : "false");
+  DEBUG_PRINT("batteryVoltage     %.4f\n", State.batteryVoltage);
+  DEBUG_PRINT("solar1Current      %.4f\n", State.solar1Current);
+  DEBUG_PRINT("solar2Current      %.4f\n", State.solar2Current);
+  DEBUG_PRINT("solar3Current      %.4f\n", State.solar3Current);
+  DEBUG_PRINT("inverterTemp       %.4f\n", State.inverterTemp);
+  DEBUG_PRINT("fan                %s\n",   State.fan ? "true" : "false");
+  DEBUG_PRINT("rawBatteryVoltage  %i\n",   State.rawBatteryVoltage);
+  DEBUG_PRINT("rawSolar1Current   %i\n",   State.rawSolar1Current);
+  DEBUG_PRINT("rawSolar2Current   %i\n",   State.rawSolar2Current);
+  DEBUG_PRINT("rawSolar3Current   %i\n",   State.rawSolar3Current);
+  DEBUG_PRINT("rawInverterTemp    %i\n",   State.rawInverterTemp);
   DEBUG_PRINTLN();
 }
 
@@ -215,19 +224,24 @@ void runInverterQueue() {
 }
 
 void getSolarCurrent() {
-  State.solar1Current = solarCurrent(ads.readADC_SingleEnded(SOLAR_1_ADC_PIN));
-  State.solar2Current = solarCurrent(ads.readADC_SingleEnded(SOLAR_2_ADC_PIN));
-  State.solar3Current = solarCurrent(ads.readADC_SingleEnded(SOLAR_3_ADC_PIN));
+  State.rawSolar1Current = ads.readADC_SingleEnded(SOLAR_1_ADC_PIN);
+  State.rawSolar2Current = ads.readADC_SingleEnded(SOLAR_2_ADC_PIN);
+  State.rawSolar3Current = ads.readADC_SingleEnded(SOLAR_3_ADC_PIN);
+  State.solar1Current = solarCurrent(State.rawSolar1Current);
+  State.solar2Current = solarCurrent(State.rawSolar2Current);
+  State.solar3Current = solarCurrent(State.rawSolar3Current);
 }
 
 void getBatteryVoltage() {
-  float val = map(analogRead(BATTERY_VOLTAGE_PIN), 0, 1023, 0, MAX_BATTERY_VOLTAGE);
+  State.rawBatteryVoltage = analogRead(BATTERY_VOLTAGE_PIN);
+  float val = mapf(State.rawBatteryVoltage, 0, 1023, 0, MAX_BATTERY_VOLTAGE);
   State.batteryVoltage = val;
 }
 
 void getInverterTemp() {
   // TODO: This is just reading 0-ADC_MAX, not calibrated at all
-  float val = map(ads.readADC_SingleEnded(INVERTER_TEMP_ADC_PIN), 0, ADC_MAX, 0, 1023);
+  State.rawInverterTemp = ads.readADC_SingleEnded(INVERTER_TEMP_ADC_PIN);
+  int val = map(State.rawInverterTemp, 0, ADC_MAX, 0, 1023);
   State.inverterTemp = KY013toCelcius(val);
 }
 
@@ -262,5 +276,10 @@ float KY013toCelcius(int val) {
 }
 
 float solarCurrent(int adcVal) {
-  return map(adcVal, SOLAR_CURRENT_ADC_LOWER, SOLAR_CURRENT_ADC_UPPER, 0, SOLAR_MAX_CURRENT);
+  return mapf(adcVal, SOLAR_CURRENT_ADC_LOWER, SOLAR_CURRENT_ADC_UPPER, 0, SOLAR_MAX_CURRENT);
+}
+
+// map, but with float values
+double mapf(double val, double inMin, double inMax, double outMin, double outMax) {
+  return (val - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
