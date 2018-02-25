@@ -1,13 +1,15 @@
 #define HOSTNAME "esp-solar-monitor" // esp-solar-monitor.local
 
-#include <Debuggy.h>
 #include <Secrets.h>
 #include <WiFiSetup.h>
+#define DEBUG_PORT TelnetDebug
+#include <Debuggy.h>
 
 #include <Adafruit_ADS1015.h>
 #include <BlynkSimpleEsp8266.h>
 #include <Losant.h>
 
+// Set these in Secrets.h
 const char* BLYNK_AUTH                = SECRET_BLYNK_AUTH;
 const char* LOSANT_DEVICE_ID          = SECRET_LOSANT_DEVICE_ID;
 const char* LOSANT_ACCESS_KEY         = SECRET_LOSANT_ACCESS_KEY;
@@ -100,6 +102,7 @@ void setup() {
 
   connect();
   initOTA();
+  initTelnetDebug();
 
   ads.setGain(GAIN_TWOTHIRDS);
   ads.begin();
@@ -132,6 +135,7 @@ void loop() {
   Blynk.run();
   losant.loop();
 
+  TelnetDebug.handle();
   ArduinoOTA.handle();
 
   firstRun = false;
