@@ -111,9 +111,6 @@ void setup() {
   Blynk.config(BLYNK_AUTH);
   Blynk.connect();
 
-  Serial.println("Connecting to Losant...");
-  losant.connectSecure(wifiClient, LOSANT_ACCESS_KEY, LOSANT_ACCESS_SECRET);
-
   pinMode(BATTERY_VOLTAGE_PIN, INPUT);
   pinMode(LCD_BUTTON_PIN, INPUT);
   pinMode(CALL_FOR_POWER_PIN, INPUT);
@@ -141,13 +138,10 @@ void loop() {
   firstRun = false;
 }
 
-// TODO: Benchmark
+// TODO: Ensure reconnection to WiFi and services after dropout
 void connect() {
-  bool reconnect = false;
-  if (WiFi.status() != WL_CONNECTED) {
-    initWiFiManager();
-  }
   if (!losant.connected()) {
+    Serial.println("Connecting to Losant...");
     losant.connectSecure(wifiClient, LOSANT_ACCESS_KEY, LOSANT_ACCESS_SECRET);
   }
 }
