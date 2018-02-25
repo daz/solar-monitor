@@ -30,7 +30,7 @@ const int INVERTER_TEMP_ADC_PIN       = 0;
 const int SOLAR_1_ADC_PIN             = 1;
 const int SOLAR_2_ADC_PIN             = 2;
 const int SOLAR_3_ADC_PIN             = 3;
-const int SOLAR_MAX_CURRENT           = 30;
+const int SOLAR_MAX_CURRENT           = 20;
 
 // For now just find values for 0-30A at GAIN_TWOTHIRDS
 const int SOLAR_CURRENT_ADC_LOWER     = 8605;
